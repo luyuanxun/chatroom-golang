@@ -1,0 +1,160 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>golang 聊天室</title>
+    <style type="text/css">
+        * {
+            margin: 0;
+            padding: 0;
+        }
+
+        #allBox {
+            width: 550px;
+            padding: 5px 6px 35px 6px;
+            border: 1px solid #4079a9;
+            position: relative;
+            margin: 0 auto;
+        }
+
+        li {
+            list-style: none;
+            overflow: hidden;
+            width: 65%;
+            margin: 10px 10px;
+        }
+
+        span {
+            padding: 10px;
+            border-radius: 5px;
+            float: left;
+            background-color: #ccc;
+        }
+
+        #content {
+            height: 360px;
+            overflow-y: auto;
+            border: 1px dashed #c5c7ca;
+        }
+
+        textarea {
+            width: 550px;
+            height: 80px;
+            border: 1px solid #7192c7;
+            margin-top: 9px;
+            resize: none;
+            font-size: 20px;
+        }
+
+        input[type='submit'] {
+            width: 98px;
+            height: 27px;
+            position: absolute;
+            right: 28px;
+        }
+
+        input[type='button'] {
+            width: 50px;
+            height: 27px;
+        }
+
+        input {
+            border: none;
+        }
+    </style>
+</head>
+<body style="margin: 0 auto;padding:15px 30px;">
+<div id="allBox">
+    <ul id="content"></ul>
+    <textarea id="editContent" cols="30" rows="10"></textarea>
+    <input type="submit" value="发送" id="send">
+</div>
+
+<script type="text/javascript">
+    let time = new Date(),
+        user = "用户" + time.getHours() + ':' + time.getMinutes() + ':' + time.getSeconds(),
+        ws = '',
+        cont = document.getElementById("content"),
+        txar = document.getElementById("editContent"),
+        send = document.getElementById("send");
+
+    function WebSocketTest() {
+        if ("WebSocket" in window) {
+            // 打开一个 web socket
+            ws = new WebSocket("ws://192.168.1.184:9090/ws");
+            ws.onopen = function () {
+                // Web Socket 已连接上，使用 send() 方法发送数据
+                console.log("连接成功");
+                let sendObj = {
+                    type: "message",
+                    content: user + "-进入聊天室",
+                };
+
+                ws.send(JSON.stringify(sendObj));
+            };
+
+            ws.onmessage = function (evt) {
+                console.log("接收数据：");
+                let msg = JSON.parse(evt.data);
+                console.log(msg);
+                showMsg(msg.content)
+            };
+
+            ws.onclose = function () {
+                // 关闭 websocket
+                console.log("连接已关闭...");
+            };
+        } else {
+            // 浏览器不支持 WebSocket
+            alert("您的浏览器不支持 WebSocket!");
+        }
+    }
+
+    send.onclick = function () {
+        if (!ws) {
+            alert("未连接聊天室");
+            return false;
+        }
+
+        if (txar.value === "") {
+            alert("请输入消息内容");
+            return false;
+        }
+
+        let sendObj = {
+            type: "message",
+            content: user + "：" + txar.value,
+        };
+
+        ws.send(JSON.stringify(sendObj));
+        txar.value = "";
+    };
+
+    document.onkeydown = function (ev) {
+        ev = ev || window.event;
+        if (ev.keyCode === 13 && ev.ctrlKey) {
+            send.click();
+        }
+    };
+
+    function showMsg(msg) {
+        let span = document.createElement("span"),
+            li = document.createElement("li");
+
+        if (msg.indexOf(user) !== -1) {
+            li.style.float = "right";
+            span.style.float = "right";
+            span.style.backgroundColor = "green";
+            span.style.color = "#fff";
+        }
+
+        span.innerHTML = msg;
+        li.appendChild(span);
+        cont.appendChild(li);
+        cont.scrollTop = cont.scrollHeight;
+    }
+
+    WebSocketTest()
+</script>
+</body>
+</html>
